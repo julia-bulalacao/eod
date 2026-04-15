@@ -295,6 +295,30 @@
       font-family: var(--mono);
       text-align: center;
     }
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: #f0faf0;
+      color: #1a5e1a;
+      border: 1px solid #b6e0b6;
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 12px 20px;
+      border-radius: 999px;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      pointer-events: none;
+      z-index: 9999;
+      box-shadow: 0 2px 8px rgba(0,100,0,0.1);
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
   </style>
 </head>
 <body>
@@ -306,7 +330,6 @@
         <p>Paste your Redmine activity → get formatted EOD instantly</p>
       </div>
       <div style="display:flex; align-items:center; gap:10px;">
-        <span class="tag">v1.0.0</span>
         <button onclick="toggleTheme()" id="themeBtn" style="font-size:13px; padding:5px 12px; border-radius:999px;">🌙 Dark</button>
       </div>
     </header>
@@ -552,33 +575,33 @@
       document.getElementById('countBadge').textContent = `${total} item${total !== 1 ? 's' : ''}`;
     }
 
+    function showToast() {
+      const toast = document.getElementById('toast');
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
     function copyOutput() {
       const text = document.getElementById('output').textContent;
       if (!text || text.includes('Output will appear') || text.includes('Walang')) return;
-
-      const showCopied = () => {
-        const el = document.getElementById('copiedMsg');
-        el.classList.add('show');
-        setTimeout(() => el.classList.remove('show'), 2000);
-      };
-
       if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(text).then(showCopied).catch(() => fallbackCopy(text, showCopied));
+        navigator.clipboard.writeText(text).then(showToast).catch(() => fallbackCopy(text));
       } else {
-        fallbackCopy(text, showCopied);
+        fallbackCopy(text);
       }
     }
 
-    function fallbackCopy(text, callback) {
+    function fallbackCopy(text) {
       const ta = document.createElement('textarea');
       ta.value = text;
       ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
       document.body.appendChild(ta);
       ta.focus();
       ta.select();
-      try { document.execCommand('copy'); callback(); } catch(e) {}
+      try { document.execCommand('copy'); showToast(); } catch(e) {}
       document.body.removeChild(ta);
     }
+
 
     function clearAll() {
       document.getElementById('input').value = '';
@@ -589,5 +612,6 @@
     initDate();
     buildSectionRows();
   </script>
+  <div class="toast" id="toast">Copied! 📋</div>
 </body>
 </html>
