@@ -159,7 +159,26 @@
       border-radius: var(--radius-lg);
       padding: 14px;
       height: 330px;
-      overflow: hidden;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border2) transparent;
+    }
+
+    .section-map::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .section-map::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .section-map::-webkit-scrollbar-thumb {
+      background: var(--border2);
+      border-radius: 999px;
+    }
+
+    .section-map::-webkit-scrollbar-thumb:hover {
+      background: var(--text3);
     }
 
     .section-map-title {
@@ -330,6 +349,7 @@
         <p>Paste your Redmine activity → get formatted EOD instantly</p>
       </div>
       <div style="display:flex; align-items:center; gap:10px;">
+        <span class="tag">v1.0.0</span>
         <button onclick="toggleTheme()" id="themeBtn" style="font-size:13px; padding:5px 12px; border-radius:999px;">🌙 Dark</button>
       </div>
     </header>
@@ -385,6 +405,8 @@
       { keyword: "filed feedback",  label: "*FILED FEEDBACK*" },
       { keyword: "on queue for qa", label: "*ON QUEUE FOR QA*" },
       { keyword: "closed",           label: "*CLOSED*" },
+      { keyword: "rejected",          label: "*REJECTED*" },
+      { keyword: "on hold",           label: "*ON HOLD*" },
     ];
 
     function toggleTheme() {
@@ -487,6 +509,8 @@
       'feedback':      '*FEEDBACK TO DEV*',
       'on queue':      '*ON QUEUE FOR QA*',
       'closed':        '*CLOSED*',
+      'rejected':      '*REJECTED*',
+      'on hold':       '*ON HOLD*',
     };
 
     function classifyStatus(statusRaw, labels) {
