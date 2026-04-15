@@ -316,6 +316,143 @@
       font-family: var(--mono);
       text-align: center;
     }
+    .datepicker-wrap {
+      position: relative;
+    }
+
+    .datepicker-input {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 38px;
+      padding: 0 12px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      color: var(--text);
+      transition: border-color 0.15s;
+      user-select: none;
+    }
+
+    .datepicker-input:hover { border-color: var(--border2); }
+
+    .datepicker-icon {
+      color: var(--text3);
+      font-size: 14px;
+    }
+
+    .datepicker-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 12px;
+      z-index: 100;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
+
+    .datepicker-dropdown.open { display: block; }
+
+    .dp-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .dp-month-year {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .dp-nav {
+      background: none;
+      border: none;
+      font-size: 18px;
+      color: var(--text2);
+      cursor: pointer;
+      padding: 2px 8px;
+      border-radius: var(--radius);
+      line-height: 1;
+    }
+
+    .dp-nav:hover { background: var(--bg3); color: var(--text); }
+
+    .dp-weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      text-align: center;
+      margin-bottom: 6px;
+    }
+
+    .dp-weekdays span {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text3);
+      padding: 2px 0;
+      text-transform: uppercase;
+    }
+
+    .dp-days {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+    }
+
+    .dp-day {
+      text-align: center;
+      padding: 6px 2px;
+      font-size: 12px;
+      font-family: var(--mono);
+      color: var(--text);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+
+    .dp-day:hover { background: var(--bg3); }
+    .dp-day.empty { cursor: default; }
+    .dp-day.today { color: var(--accent); font-weight: 600; }
+    .dp-day.selected { background: var(--accent); color: #fff; font-weight: 600; }
+    .dp-day.selected:hover { background: var(--accent-dim); }
+
+    .dp-footer {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+
+    .dp-footer-btn {
+      font-size: 12px;
+      padding: 5px 14px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border2);
+      background: transparent;
+      color: var(--text2);
+      cursor: pointer;
+      font-family: var(--sans);
+    }
+
+    .dp-footer-btn:hover { background: var(--bg3); color: var(--text); }
+
+    .dp-today-btn {
+      color: var(--accent);
+      border-color: var(--accent);
+      font-weight: 500;
+    }
+
+    .dp-today-btn:hover { background: var(--accent-bg); }
+
     .toast {
       position: fixed;
       bottom: 2rem;
@@ -358,13 +495,34 @@
     <div class="grid">
       <div class="field">
         <label>Redmine Activity — paste raw text</label>
-        <textarea id="input" placeholder="Go to Activity and copy the text beh"></textarea>
+        <textarea id="input" placeholder="Go to activity and copy the text"></textarea>
       </div>
 
       <div class="right-col">
         <div class="field">
             <label>Date</label>
-            <input type="date" id="reportDate" />
+            <div class="datepicker-wrap" id="datepickerWrap">
+              <div class="datepicker-input" id="datepickerInput" onclick="togglePicker()">
+                <span id="datepickerDisplay">Select date</span>
+                <span class="datepicker-icon">▾</span>
+              </div>
+              <div class="datepicker-dropdown" id="datepickerDropdown">
+                <div class="dp-header">
+                  <button class="dp-nav" onclick="changeMonth(-1)">‹</button>
+                  <span class="dp-month-year" id="dpMonthYear"></span>
+                  <button class="dp-nav" onclick="changeMonth(1)">›</button>
+                </div>
+                <div class="dp-weekdays">
+                  <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                </div>
+                <div class="dp-days" id="dpDays"></div>
+                <div class="dp-footer">
+                  <button class="dp-footer-btn" onclick="clearDate()">Clear</button>
+                  <button class="dp-footer-btn dp-today-btn" onclick="selectToday()">Today</button>
+                </div>
+              </div>
+            </div>
+            <input type="hidden" id="reportDate" />
           </div>
 
         <div class="section-map">
@@ -428,13 +586,98 @@
       });
     })();
 
+    const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    let dpDate = new Date();
+    let dpSelected = new Date();
+
     function initDate() {
-      const d = new Date();
+      dpSelected = new Date();
+      dpDate = new Date();
+      setHiddenDate(dpSelected);
+      updateDisplay(dpSelected);
+      document.getElementById('datepickerDisplay').style.color = '';
+      renderCalendar();
+    }
+
+    function setHiddenDate(d) {
       const y = d.getFullYear();
       const m = String(d.getMonth() + 1).padStart(2, '0');
       const day = String(d.getDate()).padStart(2, '0');
       document.getElementById('reportDate').value = `${y}-${m}-${day}`;
     }
+
+    function updateDisplay(d) {
+      document.getElementById('datepickerDisplay').textContent =
+        `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+    }
+
+    function togglePicker() {
+      document.getElementById('datepickerDropdown').classList.toggle('open');
+    }
+
+    function changeMonth(dir) {
+      dpDate.setMonth(dpDate.getMonth() + dir);
+      renderCalendar();
+    }
+
+    function renderCalendar() {
+      const y = dpDate.getFullYear();
+      const m = dpDate.getMonth();
+      document.getElementById('dpMonthYear').textContent = `${MONTHS[m]} ${y}`;
+
+      const firstDay = new Date(y, m, 1).getDay();
+      const daysInMonth = new Date(y, m + 1, 0).getDate();
+      const today = new Date();
+      const container = document.getElementById('dpDays');
+      container.innerHTML = '';
+
+      for (let i = 0; i < firstDay; i++) {
+        const el = document.createElement('div');
+        el.className = 'dp-day empty';
+        container.appendChild(el);
+      }
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const el = document.createElement('div');
+        el.className = 'dp-day';
+        el.textContent = d;
+        const thisDate = new Date(y, m, d);
+        if (today.toDateString() === thisDate.toDateString()) el.classList.add('today');
+        if (dpSelected.toDateString() === thisDate.toDateString()) el.classList.add('selected');
+        el.onclick = () => selectDay(y, m, d);
+        container.appendChild(el);
+      }
+    }
+
+    function selectDay(y, m, d) {
+      dpSelected = new Date(y, m, d);
+      dpDate = new Date(y, m, d);
+      setHiddenDate(dpSelected);
+      updateDisplay(dpSelected);
+      renderCalendar();
+      document.getElementById('datepickerDropdown').classList.remove('open');
+    }
+
+    function selectToday() {
+      const today = new Date();
+      selectDay(today.getFullYear(), today.getMonth(), today.getDate());
+    }
+
+    function clearDate() {
+      dpSelected = null;
+      document.getElementById('reportDate').value = '';
+      document.getElementById('datepickerDisplay').textContent = 'Select date';
+      document.getElementById('datepickerDisplay').style.color = 'var(--text3)';
+      renderCalendar();
+      document.getElementById('datepickerDropdown').classList.remove('open');
+    }
+
+    // Close picker when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!document.getElementById('datepickerWrap').contains(e.target)) {
+        document.getElementById('datepickerDropdown').classList.remove('open');
+      }
+    });
 
     function buildSectionRows() {
       const container = document.getElementById('sectionRows');
