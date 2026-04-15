@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>EOD Report Generator</title>
+  <title>EOD Formatter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
   <style>
@@ -49,6 +49,8 @@
       font-family: var(--sans);
       min-height: 100vh;
       padding: 2rem 1.5rem 4rem;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border2) transparent;
     }
 
     .container {
@@ -164,20 +166,20 @@
       scrollbar-color: var(--border2) transparent;
     }
 
-    .section-map::-webkit-scrollbar {
+    ::-webkit-scrollbar {
       width: 4px;
     }
 
-    .section-map::-webkit-scrollbar-track {
+    ::-webkit-scrollbar-track {
       background: transparent;
     }
 
-    .section-map::-webkit-scrollbar-thumb {
+    ::-webkit-scrollbar-thumb {
       background: var(--border2);
       border-radius: 999px;
     }
 
-    .section-map::-webkit-scrollbar-thumb:hover {
+    ::-webkit-scrollbar-thumb:hover {
       background: var(--text3);
     }
 
