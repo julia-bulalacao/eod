@@ -643,7 +643,7 @@
         el.textContent = d;
         const thisDate = new Date(y, m, d);
         if (today.toDateString() === thisDate.toDateString()) el.classList.add('today');
-        if (dpSelected.toDateString() === thisDate.toDateString()) el.classList.add('selected');
+        if (dpSelected && dpSelected.toDateString() === thisDate.toDateString()) el.classList.add('selected');
         el.onclick = () => selectDay(y, m, d);
         container.appendChild(el);
       }
