@@ -765,7 +765,7 @@
     }
 
     function extractProjectName(line) {
-      let m = line.match(/^\d{1,2}:\d{2}\s*(?:AM|PM)\s+(.+?)\s+(?:\d+\.\d+\s+hours?\s+\()?(?:Feature|Feedback|Bug)\s+#/i);
+      let m = line.match(/^\d{1,2}:\d{2}\s*(?:AM|PM)\s+(.+?)\s+(?:\d+\.\d+\s+hours?\s+\()?(?:Feature|Feedback|Bug|QA|Documentation|Support|Task)\s+#/i);
       if (!m) m = line.match(/^\d{1,2}:\d{2}\s*(?:AM|PM)\s+(\w[\w\s&]+?)\s+(?:Documentation|Support|Research\s*&\s*Dev|QA|Task)\s+#/i);
       if (!m) return null;
       const raw = m[1].trim();
@@ -816,7 +816,13 @@
         const num = m[2];
         const statusRaw = (m[3] || '').trim();
         const isHourWrap = /\d+\.\d+\s+hours?\s+\(/i.test(line);
-        const title = isHourWrap ? m[4].trim().replace(/\)$/, '') : m[4].trim();
+        let title = m[4].trim();
+        if (isHourWrap && title.endsWith(')')) {
+          // Only strip the trailing ) if parens are unbalanced (outer wrapper's closing paren)
+          const opens = (title.match(/\(/g) || []).length;
+          const closes = (title.match(/\)/g) || []).length;
+          if (closes > opens) title = title.slice(0, -1).trim();
+        }
         const key = `${type.toLowerCase()}#${num}`;
         const project = extractProjectName(line) || '__unknown__';
 
@@ -929,7 +935,7 @@ ${displayProject}
             block += `\n`;
           }
         }
-        blocks.push(block.trim());
+        blocks.push(block.trim() + '\n\nThank you');
       }
 
       const container = document.getElementById('outputBlocks');
