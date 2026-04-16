@@ -309,6 +309,73 @@
     .out-item { color: var(--text); }
     .out-num { color: var(--accent); }
 
+    .project-block {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      margin-bottom: 1rem;
+      overflow: hidden;
+    }
+
+    .project-block-toprow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .project-block-firstline {
+      font-family: var(--mono);
+      font-size: 12.5px;
+      color: var(--text);
+    }
+
+    .project-block-copy {
+      font-size: 12px;
+      padding: 4px 14px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border2);
+      background: transparent;
+      color: var(--text2);
+      cursor: pointer;
+      font-family: var(--sans);
+      transition: all 0.15s;
+    }
+
+    .project-block-copy:hover {
+      background: var(--bg3);
+      color: var(--text);
+    }
+
+    .project-block-content {
+      padding: 10px 16px 16px;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.75;
+      color: var(--text);
+    }
+
+    .project-block-rest {
+      white-space: pre-wrap;
+    }
+
+    .reminder {
+      margin-top: 1rem;
+      padding: 12px 16px;
+      background: #fffbea;
+      border: 1px solid #f0d080;
+      border-radius: var(--radius);
+      font-size: 13px;
+      color: #7a5c00;
+      font-family: var(--sans);
+    }
+
+    [data-theme="dark"] .reminder {
+      background: #2a2200;
+      border-color: #5a4400;
+      color: #f0c040;
+    }
+
     footer {
       margin-top: 3rem;
       font-size: 12px;
@@ -455,7 +522,7 @@
 
     .toast {
       position: fixed;
-      bottom: 2rem;
+      top: 2rem;
       right: 2rem;
       background: #f0faf0;
       color: #1a5e1a;
@@ -466,7 +533,7 @@
       padding: 12px 20px;
       border-radius: 999px;
       opacity: 0;
-      transform: translateY(8px);
+      transform: translateY(-8px);
       transition: opacity 0.2s ease, transform 0.2s ease;
       pointer-events: none;
       z-index: 9999;
@@ -495,7 +562,7 @@
     <div class="grid">
       <div class="field">
         <label>Redmine Activity — paste raw text</label>
-        <textarea id="input" placeholder="Go to activity and copy the text"></textarea>
+        <textarea id="input" placeholder="Go to Activity and copy the text beh"></textarea>
       </div>
 
       <div class="right-col">
@@ -543,12 +610,11 @@
       <div class="output-header">
         <label style="text-transform:uppercase; letter-spacing:0.08em;">Output</label>
         <span class="count-badge" id="countBadge">0 items</span>
-        <span class="copied-msg" id="copiedMsg">✓ Copied!</span>
       </div>
-      <div class="output-box" id="output"><span class="empty-state">Output will appear here...</span></div>
-      <div class="actions" style="margin-top: 10px;">
-        <button onclick="copyOutput()">Copy to clipboard</button>
+      <div class="reminder" id="reminder" style="display:none; margin-bottom: 1rem;">
+        ⚠️ Double-check if may na-miss na items before sending to the GC!
       </div>
+      <div id="outputBlocks"><span class="empty-state" style="font-style:italic; color:var(--text3); font-size:13px;">Output will appear here...</span></div>
     </div>
 
     <footer>by yours truly · lia 💛</footer>
@@ -699,13 +765,32 @@
     }
 
     function extractProjectName(line) {
-      // Primary: Feature/Feedback/Bug tracker (most common, safe — won't conflict with project names)
-      let m = line.match(/^\d{1,2}:\d{2}\s*(?:AM|PM)\s+(.+?)\s+(?:\d+\.\d+\s+hour\s+\()?(?:Feature|Feedback|Bug)\s+#/i);
-      // Fallback: other tracker types requiring at least 2 words before them
+      let m = line.match(/^\d{1,2}:\d{2}\s*(?:AM|PM)\s+(.+?)\s+(?:\d+\.\d+\s+hours?\s+\()?(?:Feature|Feedback|Bug)\s+#/i);
       if (!m) m = line.match(/^\d{1,2}:\d{2}\s*(?:AM|PM)\s+(\w[\w\s&]+?)\s+(?:Documentation|Support|Research\s*&\s*Dev|QA|Task)\s+#/i);
       if (!m) return null;
-      return m[1]
-        .replace(/\s*\((?:Online|Offline|Staging)[^)]*\)[_\w.]*$/i, '')
+      const raw = m[1].trim();
+
+      // Case 1: "ProjectName (Online) : SubProject_vX" — has colon separator
+      const colonM = raw.match(/^(.+?)\s+\([^)]+\)\s*:\s*(.+?)(?:_v[\d.]+[a-z]?)?$/i);
+      if (colonM) {
+        const base = colonM[1].replace(/\s+Web$/i, '').trim();
+        const sub = colonM[2].trim();
+        return `${base} - ${sub}`;
+      }
+
+      // Case 2: "ProjectName (EnvName)_vX" — env name is sub-project if not generic
+      const parenM = raw.match(/^(.+?)\s+\(([^)]+)\)[_\w.]*$/i);
+      if (parenM) {
+        const base = parenM[1].replace(/\s+Web$/i, '').trim();
+        const env = parenM[2].trim();
+        if (/^(?:Online|Offline|Staging)$/i.test(env)) return base;
+        const envLabel = env.replace(/Online-Retirement/i, 'Biz Retirement');
+        return `${base} - ${envLabel}`;
+      }
+
+      // Fallback
+      return raw
+        .replace(/\s*\([^)]*\)[_\w.]*$/i, '')
         .replace(/\s+(?:Documentation|Support|Research\s*&\s*Dev|QA|Bug|Feature|Feedback|Task)$/i, '')
         .replace(/_[A-Za-z]+$/, '')
         .replace(/\s+Web$/i, '')
@@ -719,29 +804,32 @@
 
     function parseActivity(raw) {
       const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
-      const items = [];
-      const seen = new Set();
-      // Match issue lines — also handles "0.50 hour (Feedback #XXXX (Status): Title)"
-      const issueRe = /(Feature|Feedback|Bug|Documentation|Support|Research\s*&\s*Dev|Task|QA)\s+#(\d+)(?:\s*\(([^)]+)\))?:\s*([^)]+)\)?/i;
+      const itemMap = {};  // key → item, for dedup + status update
+      const itemOrder = []; // preserve first-seen order
+      const issueRe = /(Feature|Feedback|Bug|Documentation|Support|Research\s*&\s*Dev|Task|QA)\s+#(\d+)(?:\s*\(([^)]+)\))?:\s*(.+)/i;
 
       for (const line of lines) {
-        // Only process lines that start with a timestamp — skip QA notes, names, clipboard refs etc.
         if (!isActivityLine(line)) continue;
-
         const m = line.match(issueRe);
         if (!m) continue;
         const type = m[1];
         const num = m[2];
         const statusRaw = (m[3] || '').trim();
-        // Clean trailing ) that may come from "0.50 hour (...)" wrapping
-        const title = m[4].replace(/\)$/, '').trim();
+        const isHourWrap = /\d+\.\d+\s+hours?\s+\(/i.test(line);
+        const title = isHourWrap ? m[4].trim().replace(/\)$/, '') : m[4].trim();
         const key = `${type.toLowerCase()}#${num}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
         const project = extractProjectName(line) || '__unknown__';
-        items.push({ type, num, statusRaw, title, project });
+
+        if (!itemMap[key]) {
+          // First time seeing this item
+          itemMap[key] = { type, num, statusRaw, title, project };
+          itemOrder.push(key);
+        } else if (statusRaw) {
+          // Already seen — update status if this occurrence has one (later log = more recent)
+          itemMap[key].statusRaw = statusRaw;
+        }
       }
-      return items;
+      return itemOrder.map(k => itemMap[k]);
     }
 
     // Maps exact Redmine status tags → EOD section labels
@@ -755,6 +843,7 @@
       'closed':        '*CLOSED*',
       'rejected':      '*REJECTED*',
       'on hold':       '*ON HOLD*',
+      'qa request':    '*FEEDBACK TO DEV*',
     };
 
     function classifyStatus(statusRaw, labels) {
@@ -771,7 +860,9 @@
         if (s.includes(l.keyword)) return l.label;
       }
 
-      return labels[0].label;
+      // Unknown or no status — default to Feedback to Dev
+      const feedbackLabel = labels.find(l => l.label === '*FEEDBACK TO DEV*');
+      return feedbackLabel ? feedbackLabel.label : labels[0].label;
     }
 
     function formatDate(dateStr) {
@@ -784,17 +875,17 @@
       const raw = document.getElementById('input').value;
       const dateVal = document.getElementById('reportDate').value;
       const labels = getLabels();
-      const outputEl = document.getElementById('output');
+
 
       if (!raw.trim()) {
-        outputEl.innerHTML = '<span class="empty-state">Walang input. I-paste muna ang Redmine activity text.</span>';
+        document.getElementById('outputBlocks').innerHTML = '<span class="empty-state" style="font-style:italic; color:var(--text3); font-size:13px;">Walang input. I-paste muna ang Redmine activity text.</span>';
         return;
       }
 
       const allItems = parseActivity(raw);
 
       if (!allItems.length) {
-        outputEl.innerHTML = '<span class="empty-state">Walang nahanap. Check mo kung tama ang na-copy na text — dapat may "Feature #XXXXX" o "Feedback #XXXXX" sa loob.</span>';
+        document.getElementById('outputBlocks').innerHTML = '<span class="empty-state" style="font-style:italic; color:var(--text3); font-size:13px;">Walang nahanap. Check mo kung tama ang na-copy na text.</span>';
         return;
       }
 
@@ -821,7 +912,11 @@
 
       for (const project of projectOrder) {
         const displayProject = project === '__unknown__' ? '(Unknown Project)' : project;
-        let block = `QA Updates\nAs of ${dateStr}\n${displayProject}\n\n`;
+        let block = `QA Updates
+As of ${dateStr}
+${displayProject}
+
+`;
 
         for (const sec of sectionOrder) {
           const secItems = byProject[project][sec] || [];
@@ -837,10 +932,56 @@
         blocks.push(block.trim());
       }
 
-      const out = blocks.join('\n\n');
+      const container = document.getElementById('outputBlocks');
+      container.innerHTML = '';
+      blocks.forEach((block, i) => {
+        const card = document.createElement('div');
+        card.className = 'project-block';
+        const lines = block.split('\n');
+        const firstLine = lines[0];
+        const restText = lines.slice(1).join('\n');
 
-      outputEl.textContent = out.trim();
+        const toprow = document.createElement('div');
+        toprow.className = 'project-block-toprow';
+
+        const firstLineEl = document.createElement('span');
+        firstLineEl.className = 'project-block-firstline';
+        firstLineEl.textContent = firstLine;
+
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'project-block-copy';
+        copyBtn.textContent = 'Copy';
+        copyBtn.onclick = () => copyBlock(i);
+
+        toprow.appendChild(firstLineEl);
+        toprow.appendChild(copyBtn);
+
+        const restEl = document.createElement('div');
+        restEl.className = 'project-block-rest';
+        restEl.id = `block_${i}`;
+        restEl.textContent = restText;
+
+        const contentEl = document.createElement('div');
+        contentEl.className = 'project-block-content';
+        contentEl.appendChild(toprow);
+        contentEl.appendChild(restEl);
+        card.appendChild(contentEl);
+        container.appendChild(card);
+      });
       document.getElementById('countBadge').textContent = `${total} item${total !== 1 ? 's' : ''}`;
+      document.getElementById('reminder').style.display = blocks.length ? 'block' : 'none';
+    }
+
+    function copyBlock(i) {
+      const restEl = document.getElementById(`block_${i}`);
+      const firstLine = restEl.closest('.project-block-content').querySelector('.project-block-firstline').textContent;
+      const text = firstLine + '\n' + restEl.textContent;
+      if (!text) return;
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(showToast).catch(() => fallbackCopy(text));
+      } else {
+        fallbackCopy(text);
+      }
     }
 
     function showToast() {
@@ -849,15 +990,7 @@
       setTimeout(() => toast.classList.remove('show'), 2000);
     }
 
-    function copyOutput() {
-      const text = document.getElementById('output').textContent;
-      if (!text || text.includes('Output will appear') || text.includes('Walang')) return;
-      if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(text).then(showToast).catch(() => fallbackCopy(text));
-      } else {
-        fallbackCopy(text);
-      }
-    }
+
 
     function fallbackCopy(text) {
       const ta = document.createElement('textarea');
@@ -873,7 +1006,8 @@
 
     function clearAll() {
       document.getElementById('input').value = '';
-      document.getElementById('output').innerHTML = '<span class="empty-state">Output will appear here...</span>';
+      document.getElementById('outputBlocks').innerHTML = '<span class="empty-state" style="font-style:italic; color:var(--text3); font-size:13px;">Output will appear here...</span>';
+      document.getElementById('reminder').style.display = 'none';
       document.getElementById('countBadge').textContent = '0 items';
     }
 
