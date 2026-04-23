@@ -347,7 +347,11 @@ ${displayProject}
         const restEl = document.createElement('div');
         restEl.className = 'project-block-rest';
         restEl.id = `block_${i}`;
-        restEl.textContent = restText;
+        const asOf = lines[1] || '';
+        const projTitle = lines[2] || '';
+        const bodyText = lines.slice(3).join('\n');
+        const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        restEl.innerHTML = (asOf ? `<b>${esc(asOf)}</b>\n` : '') + (projTitle ? `<b>${esc(projTitle)}</b>\n` : '') + esc(bodyText);
 
         const contentEl = document.createElement('div');
         contentEl.className = 'project-block-content';
