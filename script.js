@@ -367,7 +367,11 @@ ${displayProject}
     function copyBlock(i) {
       const restEl = document.getElementById(`block_${i}`);
       const firstLine = restEl.closest('.project-block-content').querySelector('.project-block-firstline').textContent;
-      const text = firstLine + '\n' + restEl.textContent;
+      const restLines = restEl.textContent.split('\n');
+      const asOf = restLines[0] || '';
+      const projTitle = restLines[1] || '';
+      const body = restLines.slice(2).join('\n');
+      const text = `*${firstLine}\n${asOf}\n${projTitle}*\n${body}`;
       if (!text) return;
       if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(text).then(showToast).catch(() => fallbackCopy(text));
